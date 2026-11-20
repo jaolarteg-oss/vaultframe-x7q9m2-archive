@@ -3,54 +3,119 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f5">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#101726">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com data:; media-src https://raw.githubusercontent.com; connect-src https://*.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
-  <title>FrameVault · Biblioteca de medios</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https://raw.githubusercontent.com https://*.github.io data:; media-src 'self' https://raw.githubusercontent.com https://*.github.io; connect-src https://framevault-secure-api.ja-olarteg.workers.dev; font-src 'self'; base-uri 'none'; object-src 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <title>FrameVault · Tu biblioteca visual</title>
+  <link rel="icon" type="image/png" href="ui/framevault-favicon.png">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <main id="loginPage" class="login-page">
-    <section class="login-panel" aria-labelledby="loginTitle">
-      <div class="brand login-brand"><span class="brand-logo">F<span>.</span></span><span>FrameVault<small>Media storage</small></span></div>
-      <span class="eyebrow"><span class="secure-dot"></span> ADMINISTRACIÓN PROTEGIDA</span>
-      <h1 id="loginTitle">Tu contenido,<br>en un solo lugar.</h1>
-      <p class="muted">Ingresa tu código privado para administrar fotografías, GIFs y videos almacenados en GitHub.</p>
-      <form id="loginForm" class="form-block">
-        <label for="accessCode">Código de acceso</label>
-        <div class="password-wrap"><input id="accessCode" name="accessCode" type="password" autocomplete="off" spellcheck="false" required placeholder="FV-••••-••••-••••" minlength="16"><button type="button" id="togglePass" aria-label="Mostrar código">Mostrar</button></div>
-        <p id="loginError" class="form-error" role="alert"></p>
-        <button class="btn btn-primary wide" type="submit" id="loginButton">Acceder a la biblioteca <span aria-hidden="true">→</span></button>
-      </form>
-      <div class="security-note">🔒 El código se verifica en el servidor. No se almacena en este navegador.</div>
-    </section>
-    <aside class="login-visual" aria-hidden="true"><div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div><div class="visual-center"><span>✦</span><strong>One secure place<br>for every asset.</strong><small>Organize · Upload · Share</small></div><div class="visual-chip c1">▧ &nbsp; Photos</div><div class="visual-chip c2">▶ &nbsp; Videos</div><div class="visual-chip c3">◈ &nbsp; GIFs</div></aside>
+    <div class="login-shell">
+      <section class="login-card" aria-labelledby="loginTitle">
+        <div class="brand brand-login"><img class="brand-icon" src="ui/framevault-icon.png" alt=""><span>FrameVault<small>MEDIA STORAGE</small></span></div>
+        <div class="login-content">
+          <span class="eyebrow"><span class="status-dot"></span> ESPACIO PRIVADO</span>
+          <h1 id="loginTitle">Tus archivos.<br>Todo en orden<span class="lime-period">.</span></h1>
+          <p>Una biblioteca tranquila para tus fotografías, GIFs y videos, con enlaces listos para compartir.</p>
+          <form id="loginForm" class="login-form">
+            <label for="accessCode">Código de acceso</label>
+            <div class="password-wrap"><input id="accessCode" type="password" autocomplete="off" spellcheck="false" minlength="16" required placeholder="Ingresa tu código privado"><button id="togglePass" type="button">Mostrar</button></div>
+            <p id="loginError" class="form-error" role="alert"></p>
+            <button id="loginButton" class="btn btn-dark wide" type="submit">Entrar a mi biblioteca <span aria-hidden="true">↗</span></button>
+          </form>
+          <div class="login-foot"><span class="icon-safe">◈</span><span>Acceso verificado por Cloudflare. Tus credenciales no se guardan en el navegador.</span></div>
+        </div>
+      </section>
+      <aside class="login-showcase" aria-hidden="true">
+        <div class="showcase-top"><span class="float-pill"><span class="status-dot"></span> Organiza · Publica · Comparte</span><span class="showcase-index">01 / 03</span></div>
+        <div class="showcase-visual"><img src="ui/framevault-icon.png" alt=""></div>
+        <div class="showcase-caption"><span>MI ESPACIO DIGITAL</span><h2>Un lugar para<br>cada idea visual.</h2><img src="ui/framevault-banner.png" alt=""></div>
+      </aside>
+    </div>
   </main>
-  <div id="dashboard" class="dashboard hidden">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-logo">F<span>.</span></span><span>FrameVault<small>Asset manager</small></span></div>
-      <p class="side-label">ESPACIO DE TRABAJO</p>
-      <button class="nav-item active" id="allFilesButton" type="button">▦ <span>Todos los archivos</span> <span id="sideCount" class="side-count">0</span></button>
-      <div class="folder-head"><span>CARPETAS</span><button type="button" id="newFolderSide" title="Crear carpeta" aria-label="Crear carpeta">＋</button></div>
-      <nav id="folderList" aria-label="Carpetas"></nav>
-      <div class="sidebar-bottom"><div class="mini-lock">♧ &nbsp; Sesión protegida</div><button id="logoutButton" type="button">↳ &nbsp; Cerrar sesión</button></div>
+
+  <div id="dashboard" class="app-layout hidden">
+    <div id="mobileBackdrop" class="mobile-backdrop hidden"></div>
+    <aside id="sidebar" class="sidebar">
+      <div class="brand brand-side"><img class="brand-icon" src="ui/framevault-icon.png" alt=""><span>FrameVault<small>MEDIA WORKSPACE</small></span></div>
+      <div class="side-group"><div class="side-caption">WORKSPACE</div>
+        <button id="navLibrary" class="nav-item active" type="button"><span class="nav-icon">▦</span><span>Mi biblioteca</span><span id="sideCount" class="side-count">0</span></button>
+        <button id="navInsights" class="nav-item" type="button"><span class="nav-icon">◫</span><span>Seguimiento</span></button>
+      </div>
+      <div class="side-group folder-group"><div class="folder-head"><span>CARPETAS</span><button type="button" id="newFolderSide" title="Crear carpeta" aria-label="Crear carpeta">+</button></div>
+        <button id="allFilesButton" class="folder-item active" type="button"><span>▤</span> Todas las carpetas</button>
+        <nav id="folderList" aria-label="Carpetas"></nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="side-assist"><div class="assist-glyph">✦</div><strong>Tu espacio seguro</strong><span>Conectado a tu repositorio de GitHub</span></div>
+        <button id="logoutButton" type="button" class="side-logout"><span>↪</span> Cerrar sesión</button>
+      </div>
     </aside>
+
     <section class="workspace">
-      <header class="topbar"><div class="breadcrumb">Mi biblioteca <span>/</span> <strong id="crumbCurrent">Todos los archivos</strong></div><div class="topbar-right"><span class="status-pill"><i></i> Conectado a GitHub</span><button type="button" id="logoutTop" class="small-logout">Salir</button></div></header>
+      <header class="topbar">
+        <div class="topbar-start"><button id="mobileMenuButton" class="mobile-menu" type="button" aria-label="Abrir menú">☰</button><span class="breadcrumb">FrameVault <span>/</span> <strong id="crumbCurrent">Mi biblioteca</strong></span></div>
+        <div class="topbar-end"><span class="connection"><span class="status-dot"></span> Conectado</span><button id="logoutTop" class="avatar-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">FV</button></div>
+      </header>
+
       <div class="main-content">
-        <div class="welcome-row"><div><div class="eyebrow eyebrow-light">YOUR MEDIA LIBRARY</div><h1>Biblioteca de archivos</h1><p class="muted">Todos tus recursos, organizados y listos para compartir.</p></div><button type="button" id="uploadOpen" class="btn btn-primary">＋ Subir archivos</button></div>
-        <div class="stats"><div class="stat"><div class="stat-icon purple">▦</div><div><small>Archivos</small><strong id="statFiles">0</strong></div></div><div class="stat"><div class="stat-icon blue">◫</div><div><small>Carpetas</small><strong id="statFolders">0</strong></div></div><div class="stat"><div class="stat-icon orange">◷</div><div><small>Espacio usado</small><strong id="statSize">0 MB</strong></div></div></div>
-        <div class="content-heading"><h2>Explorar contenido <span id="filesCount" class="count-label">0</span></h2><button id="refreshButton" type="button" class="btn btn-outline">↻ Actualizar</button></div>
-        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="Buscar por nombre de archivo..." aria-label="Buscar archivos"></label><select id="typeFilter" aria-label="Filtrar por tipo"><option value="all">Todos los tipos</option><option value="image">Imágenes</option><option value="gif">GIFs</option><option value="video">Videos</option></select><select id="sortSelect" aria-label="Ordenar"><option value="new">Más recientes</option><option value="old">Más antiguos</option><option value="name">Nombre A–Z</option></select><button id="createFolder" class="btn btn-outline" type="button">＋ Carpeta</button></div>
-        <p id="pageMessage" class="page-message" role="status"></p>
-        <div id="grid" class="file-grid" aria-live="polite"></div>
+        <section id="libraryView" class="view">
+          <div class="section-heading"><div><p class="overline">TU ESPACIO VISUAL</p><h1>Mi biblioteca<span class="lime-period">.</span></h1><p class="heading-sub">Cada imagen a mano, cada enlace en su lugar.</p></div><button id="uploadOpen" class="btn btn-dark" type="button"><span class="button-plus">＋</span> Subir archivos</button></div>
+          <div class="hero-banner">
+            <div class="hero-copy"><span class="hero-badge">TU CONTENIDO, ORGANIZADO</span><h2>Todo lo visual.<br>En un solo lugar.</h2><p>Guarda, encuentra y comparte en segundos.</p><button type="button" id="heroInsights" class="btn btn-white">Ver seguimiento <span>↗</span></button></div>
+            <img src="ui/framevault-banner.png" alt="" class="hero-banner-image">
+          </div>
+          <div class="quick-stats">
+            <article class="stat-card"><div class="stat-meta"><span class="stat-mark lime">▧</span><span>Archivos guardados</span></div><strong id="statFiles">0</strong><small>En tu colección</small></article>
+            <article class="stat-card"><div class="stat-meta"><span class="stat-mark sand">▱</span><span>Carpetas</span></div><strong id="statFolders">0</strong><small>Espacios organizados</small></article>
+            <article class="stat-card"><div class="stat-meta"><span class="stat-mark blue">◈</span><span>Medios almacenados</span></div><strong id="statSize">0 MB</strong><small>Archivos indexados en GitHub</small></article>
+            <article class="stat-card stat-card-accent"><div class="stat-meta"><span class="stat-mark dark">↗</span><span>Espacio estimado restante</span></div><strong id="statRemaining">—</strong><small>Respecto a 1 GB publicado en Pages*</small></article>
+          </div>
+          <div class="content-heading"><div><span class="eyebrow-dark">BIBLIOTECA</span><h2>Explorar archivos <span id="filesCount" class="count-label">0</span></h2></div><button id="refreshButton" class="btn btn-quiet" type="button">↻ Actualizar</button></div>
+          <div class="toolbar"><label class="search-box"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Buscar archivos por nombre..." aria-label="Buscar archivos"></label><select id="typeFilter" aria-label="Filtrar archivos"><option value="all">Todos los tipos</option><option value="image">Imágenes</option><option value="gif">GIFs</option><option value="video">Videos</option></select><select id="sortSelect" aria-label="Ordenar archivos"><option value="new">Más recientes</option><option value="old">Más antiguos</option><option value="name">Nombre A–Z</option></select><button id="createFolder" class="btn btn-outline" type="button">＋ Carpeta</button></div>
+          <p id="pageMessage" class="page-message" role="status"></p>
+          <div id="grid" class="file-grid" aria-live="polite"></div>
+          <p class="foot-note">* Cálculo orientativo según los archivos visibles; no incluye historial Git ni todo el contenido del sitio publicado.</p>
+        </section>
+
+        <section id="insightsView" class="view hidden">
+          <div class="section-heading"><div><p class="overline">PANEL DE SEGUIMIENTO</p><h1>Tu espacio, bajo control<span class="lime-period">.</span></h1><p class="heading-sub">Límites, capacidad disponible y proyecciones claras.</p></div><button id="insightsRefresh" type="button" class="btn btn-outline">↻ Actualizar datos</button></div>
+          <div class="insight-intro"><span class="insight-tag"><span class="status-dot"></span> PANORAMA GENERAL</span><p>Las cifras de archivos son automáticas. Las cuotas de tráfico y Cloudflare requieren información medida o estimada; nunca se inventan consumos.</p></div>
+          <div class="overview-layout">
+            <article class="panel-panel storage-panel"><div class="panel-title-row"><div><span class="overline">GITHUB PAGES</span><h2>Espacio de medios</h2></div><span class="soft-icon">▥</span></div>
+              <div class="ring-row"><div id="storageRing" class="usage-ring"><div><span id="storageUsedPct">0%</span><small>estimado</small></div></div><div class="ring-details"><span>Archivos en biblioteca</span><strong id="insightStorageUsed">0 MB</strong><span>Restante orientativo*</span><strong id="insightStorageLeft">—</strong></div></div>
+              <div class="bar-legend"><span><i class="legend-dot green"></i> Medios indexados</span><span>Referencia: 1 GB publicado</span></div><div class="progress"><div id="storageProgress" class="progress-fill"></div></div><p class="panel-footnote">* No es una medición del sitio Pages completo. No incluye HTML, CSS, JS ni historial Git.</p>
+            </article>
+            <article class="panel-panel github-panel"><div class="panel-title-row"><div><span class="overline">GITHUB</span><h2>Estado de la API</h2></div><span class="soft-icon">⌁</span></div><div class="two-metrics"><div><span>Solicitudes disponibles</span><strong id="apiRemaining">—</strong><small id="apiReset">No hay lectura disponible</small></div><div><span>Capacidad del repositorio</span><strong id="repoSize">—</strong><small>Dato aproximado de GitHub</small></div></div><div class="progress"><div id="apiProgress" class="progress-fill dark-fill"></div></div><div id="apiHint" class="hint-panel">Actualiza el Worker incluido para consultar la cuota real de GitHub.</div></article>
+          </div>
+          <div class="metrics-section-heading"><div><span class="eyebrow-dark">DISTRIBUCIÓN DE ARCHIVOS</span><h2>¿Qué ocupa tu espacio?</h2></div><span class="aside-caption">Actualizado desde el repositorio</span></div>
+          <div class="overview-layout">
+            <article class="panel-panel category-panel"><div id="categoryBars" class="category-bars"></div></article>
+            <article class="panel-panel top-files-panel"><h3>Archivos más pesados</h3><div id="largestFiles" class="rank-list"><p>Sin archivos todavía.</p></div></article>
+          </div>
+          <div class="metrics-section-heading"><div><span class="eyebrow-dark">PRESUPUESTO DE USO</span><h2>¿Cuánto te queda disponible?</h2></div><span class="aside-caption">Introduce tus lecturas de Cloudflare</span></div>
+          <div class="quota-guide">Estos servicios no ofrecen sus consumos actuales mediante la conexión existente. Introduce los valores que ves en sus paneles; el restante y los porcentajes se calculan automáticamente. Los campos se guardan solo en este navegador.</div>
+          <div class="quota-grid">
+            <article class="quota-card"><div class="quota-top"><span>Cloudflare Workers</span><span class="quota-icon">↗</span></div><strong id="workerLeft">—</strong><small>solicitudes restantes hoy (UTC)</small><div class="progress"><div id="workerBar" class="progress-fill"></div></div><label for="workerUsed">Solicitudes utilizadas hoy</label><input id="workerUsed" type="number" min="0" step="1" placeholder="Introduce dato real"><span class="quota-limit">Límite: 100.000 / día</span></article>
+            <article class="quota-card"><div class="quota-top"><span>Workers KV · lecturas</span><span class="quota-icon">⌘</span></div><strong id="kvReadsLeft">—</strong><small>lecturas restantes hoy (UTC)</small><div class="progress"><div id="kvReadsBar" class="progress-fill"></div></div><label for="kvReadsUsed">Lecturas utilizadas hoy</label><input id="kvReadsUsed" type="number" min="0" step="1" placeholder="Introduce dato real"><span class="quota-limit">Límite: 100.000 / día</span></article>
+            <article class="quota-card"><div class="quota-top"><span>Workers KV · escrituras</span><span class="quota-icon">✎</span></div><strong id="kvWritesLeft">—</strong><small>escrituras restantes hoy (UTC)</small><div class="progress"><div id="kvWritesBar" class="progress-fill"></div></div><label for="kvWritesUsed">Escrituras utilizadas hoy</label><input id="kvWritesUsed" type="number" min="0" step="1" placeholder="Introduce dato real"><span class="quota-limit">Límite: 1.000 / día</span></article>
+          </div>
+          <div class="metrics-section-heading"><div><span class="eyebrow-dark">TRANSFERENCIA</span><h2>Estimador de ancho de banda</h2></div><span class="aside-caption">GitHub Pages · 100 GB al mes (límite flexible)</span></div>
+          <div class="bandwidth-layout">
+            <article class="panel-panel scenario-panel"><div class="panel-title-row"><div><span class="overline">ESCENARIO MENSUAL</span><h3>Simula tus descargas</h3></div><span class="soft-icon">◷</span></div><div class="scenario-fields"><label>Peso promedio de archivo (MB)<input id="averageWeight" type="number" min="0.01" max="1024" step="0.01" placeholder="Calculando desde tu biblioteca"></label><label>Descargas estimadas / mes<input id="monthlyViews" type="number" min="0" step="1" placeholder="Ej. 5000"></label></div><div class="forecast-box"><span>Consumo mensual proyectado</span><strong id="projectedGB">—</strong><span id="projectedLeft">Completa las descargas para estimar el espacio restante.</span></div><div class="progress"><div id="bandwidthBar" class="progress-fill"></div></div><p class="panel-footnote">Este cálculo no es tráfico real: no mide cuántas veces se abrió una URL ni considera cachés o transferencias parciales.</p></article>
+            <article class="panel-panel bandwidth-note"><div class="note-badge">i</div><h3>Sobre el límite de 100 GB</h3><p>GitHub Pages publica un límite flexible mensual, pero no proporciona en esta integración un contador fiable del tráfico ya consumido.</p><p>Si necesitas una medición real, configura analítica del tráfico con una infraestructura que registre las transferencias.</p><a href="https://docs.github.com/es/pages/getting-started-with-github-pages/github-pages-limits" target="_blank" rel="noopener noreferrer" class="text-link">Ver límites oficiales ↗</a></article>
+          </div>
+        </section>
       </div>
     </section>
   </div>
-  <dialog id="uploadDialog" class="modal"><form method="dialog" class="modal-header"><div><small>UPLOAD ASSETS</small><h2>Subir archivos</h2></div><button aria-label="Cerrar" class="icon-btn">✕</button></form><div class="modal-body"><div class="upload-zone" id="dropZone" tabindex="0" role="button" aria-label="Seleccionar archivos"><div class="upload-illustration">⬆</div><strong>Arrastra archivos aquí</strong><span>o haz clic para seleccionarlos</span><small>PNG, JPG, WEBP, GIF, MP4, WEBM · Máx. 8 MB por archivo</small></div><input id="fileInput" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.gif,.mp4,.webm" hidden><div class="field"><label for="uploadFolder">Guardar en la carpeta</label><select id="uploadFolder"><option value="">Sin carpeta (raíz)</option></select></div><div id="selectedFiles" class="selected-files"></div><p id="uploadStatus" class="muted small-text"></p></div><div class="modal-footer"><button type="button" class="btn btn-outline" id="cancelUpload">Cancelar</button><button type="button" class="btn btn-primary" id="startUpload" disabled>Subir al repositorio</button></div></dialog>
-  <dialog id="folderDialog" class="modal small-modal"><form method="dialog" class="modal-header"><div><small>NEW FOLDER</small><h2>Crear carpeta</h2></div><button aria-label="Cerrar" class="icon-btn">✕</button></form><form id="folderForm" class="modal-body"><label for="folderName">Nombre de la carpeta</label><input id="folderName" type="text" autocomplete="off" placeholder="ej. logos / campanas / sprint-123" maxlength="90" required><p class="hint">Puedes crear subcarpetas con <code>/</code>. Solo letras sin tildes, números, guion y guion bajo.</p><p id="folderError" class="form-error" role="alert"></p><div class="modal-footer no-padding"><button type="button" id="cancelFolder" class="btn btn-outline">Cancelar</button><button type="submit" class="btn btn-primary">Crear carpeta</button></div></form></dialog>
-  <dialog id="previewDialog" class="modal preview-modal"><form method="dialog" class="modal-header"><div><small>PREVIEW</small><h2 id="previewTitle">Archivo</h2></div><button aria-label="Cerrar" class="icon-btn">✕</button></form><div id="previewContent" class="preview-body"></div><div class="modal-footer"><a id="previewOpenLink" class="btn btn-outline" target="_blank" rel="noopener noreferrer">Abrir archivo</a><button type="button" id="previewCopy" class="btn btn-primary">Copiar URL directa</button></div></dialog>
+
+  <dialog id="uploadDialog" class="modal"><form method="dialog" class="modal-header"><div><small>AGREGAR CONTENIDO</small><h2>Subir archivos</h2></div><button class="icon-btn" aria-label="Cerrar">✕</button></form><div class="modal-body"><div id="dropZone" class="upload-zone" tabindex="0" role="button" aria-label="Seleccionar archivos"><div class="upload-illustration">↑</div><strong>Arrastra tus archivos aquí</strong><span>o pulsa para seleccionarlos</span><small>PNG · JPG · WEBP · GIF · MP4 · WEBM — máximo 8 MB por archivo</small></div><input id="fileInput" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.gif,.mp4,.webm" hidden><div class="field"><label for="uploadFolder">Guardar en carpeta</label><select id="uploadFolder"><option value="">Sin carpeta (raíz)</option></select></div><div id="selectedFiles" class="selected-files"></div><p id="uploadStatus" class="muted small-text"></p></div><div class="modal-footer"><button id="cancelUpload" type="button" class="btn btn-outline">Cancelar</button><button id="startUpload" type="button" class="btn btn-dark" disabled>Subir al repositorio</button></div></dialog>
+  <dialog id="folderDialog" class="modal small-modal"><form method="dialog" class="modal-header"><div><small>ORGANIZAR</small><h2>Nueva carpeta</h2></div><button class="icon-btn" aria-label="Cerrar">✕</button></form><form id="folderForm" class="modal-body"><label for="folderName">Nombre de carpeta</label><input id="folderName" type="text" maxlength="90" autocomplete="off" placeholder="logos / campanas / sprint-123" required><p class="hint">Hasta 4 niveles con /. Usa letras sin tildes, números y guiones.</p><p id="folderError" class="form-error" role="alert"></p><div class="modal-footer no-padding"><button id="cancelFolder" type="button" class="btn btn-outline">Cancelar</button><button type="submit" class="btn btn-dark">Crear carpeta</button></div></form></dialog>
+  <dialog id="previewDialog" class="modal preview-modal"><form method="dialog" class="modal-header"><div><small>VISTA PREVIA</small><h2 id="previewTitle">Archivo</h2></div><button class="icon-btn" aria-label="Cerrar">✕</button></form><div id="previewContent" class="preview-body"></div><div class="modal-footer"><a id="previewOpenLink" class="btn btn-outline" target="_blank" rel="noopener noreferrer">Abrir archivo</a><button id="previewCopy" class="btn btn-dark" type="button">Copiar URL directa</button></div></dialog>
 </body>
 </html>
