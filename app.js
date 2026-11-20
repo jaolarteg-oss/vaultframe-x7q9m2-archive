@@ -59,6 +59,8 @@ function endSession() {
   sessionToken = '';
   library = { files: [], folders: [] };
   selectedFiles = [];
+  activeFolder = '';
+  hideMobileMenu();
   $('loginPage').classList.remove('hidden');
   $('dashboard').classList.add('hidden');
   for (const id of ['uploadDialog', 'folderDialog', 'previewDialog']) {
@@ -80,6 +82,8 @@ $('loginForm').addEventListener('submit', async (event) => {
     sessionToken = data.token;
     showDashboard();
     await loadFiles();
+    void loadUsage();
+    switchView('library');
     notify('Acceso concedido. Bienvenido a FrameVault.');
   } catch (error) {
     $('loginError').textContent = error.message;
@@ -96,7 +100,7 @@ $('togglePass').addEventListener('click', () => {
 
 $('logoutButton').addEventListener('click', endSession);
 $('logoutTop').addEventListener('click', endSession);
-$('refreshButton').addEventListener('click', loadFiles);
+$('refreshButton').addEventListener('click', () => { loadFiles(); void loadUsage(); });
 $('searchInput').addEventListener('input', renderGrid);
 $('typeFilter').addEventListener('change', renderGrid);
 $('sortSelect').addEventListener('change', renderGrid);
@@ -111,6 +115,7 @@ async function loadFiles() {
     $('pageMessage').textContent = '';
     renderFolders();
     renderGrid();
+    updateInsights();
   } catch (error) {
     $('pageMessage').textContent = error.message;
     notify(error.message);
@@ -152,6 +157,8 @@ function updateActiveFolderLabel() {
 }
 
 function selectFolder(folder) {
+  switchView('library');
+  hideMobileMenu();
   activeFolder = folder;
   updateActiveFolderLabel();
   renderGrid();
@@ -323,3 +330,159 @@ $('folderForm').addEventListener('submit', async (event) => {
     notify('Carpeta creada correctamente.');
   } catch (error) { $('folderError').textContent = error.message; }
 });
+
+/* FrameVault v2: vistas y seguimiento — ninguna credencial se almacena aquí. */
+const PAGE_BYTES_REFERENCE = 1_000_000_000;
+const MONTHLY_BANDWIDTH_BYTES = 100_000_000_000;
+const USAGE_LIMITS = { workerUsed: 100000, kvReadsUsed: 100000, kvWritesUsed: 1000 };
+let cloudUsage = null;
+let currentView = 'library';
+const MONTH_KEY = new Date().toISOString().slice(0,7);
+const DAY_KEY = new Date().toISOString().slice(0,10);
+const LOCAL_PREFERENCES_KEY = 'framevault:usage-estimates:v2';
+
+function numberEs(value) { return Number(value).toLocaleString('es-CO'); }
+function conciseGB(bytes) { return `${(bytes / 1_000_000_000).toLocaleString('es-CO', {maximumFractionDigits: 2})} GB`; }
+function percent(value, total) { return total ? Math.max(0, Math.min(100, value / total * 100)) : 0; }
+function setWidth(id, part) { $(id).style.width = `${Math.max(0,Math.min(100,part))}%`; }
+
+function switchView(view) {
+  currentView = view;
+  $('libraryView').classList.toggle('hidden', view !== 'library');
+  $('insightsView').classList.toggle('hidden', view !== 'insights');
+  $('navLibrary').classList.toggle('active', view === 'library');
+  $('navInsights').classList.toggle('active', view === 'insights');
+  $('crumbCurrent').textContent = view === 'library' ? (activeFolder || 'Mi biblioteca') : 'Seguimiento';
+  hideMobileMenu();
+  if (view === 'insights') { updateInsights(); void loadUsage(); }
+}
+function hideMobileMenu() {
+  $('sidebar').classList.remove('open');
+  $('mobileBackdrop').classList.add('hidden');
+}
+$('navLibrary').addEventListener('click', () => switchView('library'));
+$('navInsights').addEventListener('click', () => switchView('insights'));
+$('heroInsights').addEventListener('click', () => switchView('insights'));
+$('insightsRefresh').addEventListener('click', () => { void loadFiles(); void loadUsage(); });
+$('mobileMenuButton').addEventListener('click', () => {
+  const opening = !$('sidebar').classList.contains('open');
+  $('sidebar').classList.toggle('open', opening);
+  $('mobileBackdrop').classList.toggle('hidden', !opening);
+});
+$('mobileBackdrop').addEventListener('click', hideMobileMenu);
+
+async function loadUsage() {
+  if (!sessionToken) return;
+  try {
+    const next = await callApi('/usage');
+    cloudUsage = next;
+    $('apiHint').textContent = 'Cuota de GitHub consultada directamente desde la API con tu sesión protegida.';
+  } catch (error) {
+    // Si no se ha actualizado el Worker, la biblioteca sigue completamente funcional.
+    cloudUsage = null;
+    if (sessionToken) $('apiHint').textContent = 'No se pudo consultar la cuota de GitHub. Actualiza el código del Worker para habilitar esta lectura.';
+  }
+  updateInsights();
+}
+
+function renderCategoryBars(byCategory) {
+  const parent = $('categoryBars'); parent.replaceChildren();
+  const total = Object.values(byCategory).reduce((sum,x) => sum + x.bytes, 0);
+  const categories = [ ['image','Fotografías'], ['gif','GIFs'], ['video','Videos'] ];
+  categories.forEach(([key,label]) => {
+    const item = document.createElement('div'); item.className = 'category-row';
+    const name = document.createElement('span'); name.className = 'label'; name.textContent = `${label} (${byCategory[key].count})`;
+    const track = document.createElement('div'); track.className = 'category-track';
+    const fill = document.createElement('div'); fill.className = 'category-fill';
+    fill.style.width = `${percent(byCategory[key].bytes,total)}%`; track.append(fill);
+    const amount = document.createElement('span'); amount.className = 'amount'; amount.textContent = prettyBytes(byCategory[key].bytes);
+    item.append(name,track,amount); parent.append(item);
+  });
+}
+function renderLargestFiles() {
+  const root = $('largestFiles'); root.replaceChildren();
+  const top = [...library.files].sort((a,b) => (b.size || 0) - (a.size || 0)).slice(0,5);
+  if (!top.length) { const p = document.createElement('p'); p.textContent = 'Aún no hay archivos para analizar.'; root.append(p); }
+  top.forEach((file,i) => {
+    const line = document.createElement('div'); line.className = 'rank-row';
+    const order = document.createElement('span'); order.className = 'rank-num'; order.textContent = String(i+1).padStart(2,'0');
+    const name = document.createElement('span'); name.className = 'rank-name'; name.textContent = file.name; name.title = file.name;
+    const size = document.createElement('span'); size.className = 'rank-size'; size.textContent = prettyBytes(file.size || 0);
+    line.append(order,name,size); root.append(line);
+  });
+}
+function updateInsights() {
+  const files = library.files || [];
+  const totalBytes = files.reduce((sum,file) => sum + (Number(file.size) || 0), 0);
+  const storageLeft = Math.max(0, PAGE_BYTES_REFERENCE-totalBytes);
+  const usedPct = percent(totalBytes,PAGE_BYTES_REFERENCE);
+  $('statRemaining').textContent = prettyBytes(storageLeft);
+  $('insightStorageUsed').textContent = prettyBytes(totalBytes);
+  $('insightStorageLeft').textContent = prettyBytes(storageLeft);
+  $('storageUsedPct').textContent = `${usedPct.toLocaleString('es-CO',{maximumFractionDigits:1})}%`;
+  $('storageRing').style.setProperty('--percent',`${usedPct}%`);
+  setWidth('storageProgress',usedPct);
+  const counts = {image:{bytes:0,count:0},gif:{bytes:0,count:0},video:{bytes:0,count:0}};
+  for (const f of files) if (counts[f.category]) { counts[f.category].bytes += Number(f.size)||0; counts[f.category].count++; }
+  renderCategoryBars(counts);
+  renderLargestFiles();
+  if (cloudUsage && cloudUsage.githubApi && Number.isFinite(cloudUsage.githubApi.remaining)) {
+    const a = cloudUsage.githubApi;
+    $('apiRemaining').textContent = numberEs(a.remaining);
+    $('apiReset').textContent = `de ${numberEs(a.limit)} · Reinicio: ${new Date(a.reset*1000).toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'})}`;
+    setWidth('apiProgress',percent(a.used,a.limit));
+  } else {
+    $('apiRemaining').textContent = '—'; $('apiReset').textContent = 'Sin lectura en tiempo real'; setWidth('apiProgress',0);
+  }
+  const repo = cloudUsage?.repo;
+  $('repoSize').textContent = repo && Number.isFinite(repo.sizeBytes) ? prettyBytes(repo.sizeBytes) : '—';
+  refreshQuotaInputs();
+  refreshProjection();
+}
+function loadPreferences() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_PREFERENCES_KEY)) || {}; } catch { return {}; }
+}
+function savePreferences() {
+  const input = { date:DAY_KEY, month:MONTH_KEY };
+  for (const name of [...Object.keys(USAGE_LIMITS), 'monthlyViews', 'averageWeight']) input[name] = $(name).value.trim();
+  try { localStorage.setItem(LOCAL_PREFERENCES_KEY,JSON.stringify(input)); } catch { /* privado o restringido */ }
+}
+function populatePreferences() {
+  const saved = loadPreferences();
+  if (saved.date === DAY_KEY) for (const name of Object.keys(USAGE_LIMITS)) if (saved[name] !== undefined) $(name).value = saved[name];
+  if (saved.month === MONTH_KEY) for (const name of ['monthlyViews','averageWeight']) if (saved[name] !== undefined) $(name).value = saved[name];
+}
+function refreshQuotaInputs() {
+  for (const [id,limit] of Object.entries(USAGE_LIMITS)) {
+    const field = $(id); const value = field.value.trim();
+    const label = id === 'workerUsed' ? 'workerLeft' : id === 'kvReadsUsed' ? 'kvReadsLeft' : 'kvWritesLeft';
+    const bar = id === 'workerUsed' ? 'workerBar' : id === 'kvReadsUsed' ? 'kvReadsBar' : 'kvWritesBar';
+    if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0) { $(label).textContent = '—'; setWidth(bar,0); continue; }
+    const used = Number(value); const left = Math.max(0,limit-used);
+    $(label).textContent = used > limit ? `${numberEs(left)} (excedido)` : numberEs(left);
+    setWidth(bar,percent(used,limit));
+  }
+}
+function refreshProjection() {
+  const weightStr = $('averageWeight').value.trim();
+  const viewsStr = $('monthlyViews').value.trim();
+  const fileCount = library.files.length;
+  const totalBytes = library.files.reduce((a,f)=>a+(Number(f.size)||0),0);
+  const autoMB = fileCount ? totalBytes/fileCount/1_000_000 : 0;
+  if (!weightStr) $('averageWeight').placeholder = autoMB ? `Media: ${autoMB.toFixed(2)} MB` : 'Ej. 2.5';
+  if (!viewsStr || Number(viewsStr) < 0 || !Number.isFinite(Number(viewsStr)) || (!weightStr && !autoMB)) {
+    $('projectedGB').textContent = '—'; $('projectedLeft').textContent = 'Completa las descargas para estimar el espacio restante.'; setWidth('bandwidthBar',0); return;
+  }
+  const mb = weightStr ? Number(weightStr) : autoMB;
+  if (!(mb > 0 && Number.isFinite(mb))) { $('projectedGB').textContent='—';$('projectedLeft').textContent='Introduce un tamaño de archivo válido.';setWidth('bandwidthBar',0);return; }
+  const transfer = mb * 1_000_000 * Number(viewsStr);
+  const left = Math.max(0,MONTHLY_BANDWIDTH_BYTES-transfer);
+  $('projectedGB').textContent = conciseGB(transfer);
+  $('projectedLeft').textContent = transfer>MONTHLY_BANDWIDTH_BYTES ? `El escenario excedería el límite flexible por ${conciseGB(transfer-MONTHLY_BANDWIDTH_BYTES)}.` : `Restante proyectado: ${conciseGB(left)} de 100 GB.`;
+  setWidth('bandwidthBar',percent(transfer,MONTHLY_BANDWIDTH_BYTES));
+}
+for (const id of Object.keys(USAGE_LIMITS)) $(id).addEventListener('input',() => { savePreferences(); refreshQuotaInputs(); });
+for (const id of ['averageWeight','monthlyViews']) $(id).addEventListener('input',() => { savePreferences(); refreshProjection(); });
+populatePreferences();
+refreshQuotaInputs();
+refreshProjection();
