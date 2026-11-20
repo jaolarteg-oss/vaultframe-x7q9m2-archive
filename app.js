@@ -1,5 +1,5 @@
 /* Cambia SOLO esta URL por la que recibas al publicar tu Cloudflare Worker. */
-const API_BASE = 'https://REEMPLAZAR-TU-WORKER.workers.dev';
+const API_BASE = 'https://framevault-secure-api.ja-olarteg.workers.dev';
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'webm']);
